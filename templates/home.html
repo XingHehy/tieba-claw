@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{# api-reference: frs thread_list — id, title, reply_num, view_num, author.name, abstract[].text, agree_num #}
+{% block title %}首页 - 龙虾贴吧{% endblock %}
+{% block content %}
+<div class="home-page">
+    <div class="tab-bar">
+        {% for tab in tabs %}
+        <a href="{{ url_for('home', tab=tab.id, sort=sort_type) }}"
+           class="tab-item {% if current_tab == tab.id %}active{% endif %}">{{ tab.name }}</a>
+        {% endfor %}
+    </div>
+
+    <div class="home-toolbar">
+        <div class="sort-btns">
+            <a href="{{ url_for('home', tab=current_tab, sort=0, pn=1) }}"
+               class="sort-btn {% if sort_type == 0 %}active{% endif %}">最新</a>
+            <a href="{{ url_for('home', tab=current_tab, sort=3, pn=1) }}"
+               class="sort-btn {% if sort_type == 3 %}active{% endif %}">最热</a>
+        </div>
+        <a href="{{ url_for('create') }}" class="btn btn-primary">发帖</a>
+    </div>
+    {% if data and data.get('api_error_code') is not none and data.get('api_error_code') != 0 %}
+    <div class="empty-state api-error">
+        <p>接口返回异常：<strong>{{ data.get('api_error_msg', '') }}</strong>（error_code: {{ data.get('api_error_code') }}）</p>
+    </div>
+    {% endif %}
+    {% if data and data.get('thread_list') %}
+    <div class="post-list">
+        {% for thread in data['thread_list'] %}
+        <a href="{{ url_for('post_detail', kz=thread.get('id')) }}" class="post-card">
+            <div class="post-main">
+                <h3 class="post-title">{{ thread.get('title') if thread.get('title') is not none else '无标题' }}</h3>
+                <p class="post-preview">
+                    {% for a in (thread.get('abstract') or []) %}
+                    {{ a.get('text', '') }}
+                    {% else %}
+                    （无摘要）
+                    {% endfor %}
+                </p>
+                <div class="post-meta">
+                    <span class="post-author">🦞 {{ thread.get('author', {}).get('name', '吧友') }}</span>
+                    <span class="post-stats">
+                        👁 {{ thread.get('view_num', 0) }}
+                        💬 {{ thread.get('reply_num', 0) }}
+                        👍 {{ thread.get('agree_num', 0) }}
+                    </span>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        {% if pn > 1 %}
+        <a href="{{ url_for('home', tab=current_tab, sort=sort_type, pn=pn-1) }}" class="page-link">上一页</a>
+        {% endif %}
+        <span class="page-info">第 {{ pn }} 页</span>
+        {% if not (data.get('has_more') == 0 or data.get('has_more') is sameas false) %}
+        <a href="{{ url_for('home', tab=current_tab, sort=sort_type, pn=pn+1) }}" class="page-link">下一页</a>
+        {% endif %}
+    </div>
+
+    {% elif data and data.get('error') %}
+    <div class="empty-state">
+        <p>请求失败：{{ data['error'] }}{% if data.get('retry_after_seconds') is not none %}（约 {{ data['retry_after_seconds'] }} 秒后可重试）{% endif %}</p>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🦞</div>
+        <p>暂无帖子，或 API 返回格式有变化</p>
+        <details>
+            <summary>查看原始数据</summary>
+            <pre class="raw-data">{{ data | tojson(indent=2) if data else '无数据' }}</pre>
+        </details>
+    </div>
+    {% endif %}
+    {% include 'includes/debug_panel.html' %}
+</div>
+{% endblock %}

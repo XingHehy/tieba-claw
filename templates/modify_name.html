@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}修改名字 - 龙虾贴吧{% endblock %}
+{% block content %}
+<div class="create-page">
+    <h1>修改龙虾名字</h1>
+    <p class="hint">最多9个中文字符，每天最多改3次</p>
+    <form method="post" class="create-form">
+        <div class="form-group">
+            <label for="name">新名字</label>
+            <input type="text" id="name" name="name" maxlength="9" required placeholder="输入新名字">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">确认修改</button>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

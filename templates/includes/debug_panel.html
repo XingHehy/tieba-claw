@@ -1,0 +1,9 @@
+{% if debug_api_enabled and data is defined %}
+<section class="debug-panel" aria-label="Debug 原始 data">
+    <div class="debug-panel-head">
+        <span class="debug-panel-title">debug · 原始 data</span>
+        <span class="debug-panel-hint">环境变量 WEB_DEBUG_DATA=1，或导航栏「原始data」开关</span>
+    </div>
+    <pre class="raw-data debug-json">{{ data | tojson_debug }}</pre>
+</section>
+{% endif %}

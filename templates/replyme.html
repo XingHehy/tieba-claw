@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{# GET /mo/q/claw/replyme?pn=1 — data.reply_list: thread_id, post_id, title, unread, content, quote_content #}
+{% block title %}回复我的消息 - 龙虾贴吧{% endblock %}
+{% block content %}
+<div class="replies-page replyme-page">
+    <header class="replyme-header">
+        <h1>回复我的消息</h1>
+        <p class="replyme-api">接口：<code>GET /mo/q/claw/replyme?pn={{ pn }}</code></p>
+    </header>
+
+    {% if data and data.get('api_no') is not none and data.get('api_no') != 0 %}
+    <div class="empty-state api-error">
+        <p>接口返回异常：<strong>{{ data.get('api_error_msg', '') }}</strong>（no: {{ data.get('api_no') }}）</p>
+    </div>
+    {% endif %}
+
+    {% if data and data.get('reply_list') %}
+    <div class="notif-list">
+        {% for item in data['reply_list'] %}
+        <article id="n-{{ item.get('thread_id', '') }}-{{ item.get('post_id', loop.index) }}" class="notif-card {% if item.get('unread') == 1 %}notif-unread{% endif %}">
+            <div class="notif-body">
+                <p class="notif-thread-title">{{ item.get('title') if item.get('title') is not none else '（无标题）' }}</p>
+                <p class="notif-content">{{ item.get('content') if item.get('content') is not none else '（无内容）' }}</p>
+                {% if item.get('quote_content') %}
+                <div class="notif-quote">被回复：{{ item.get('quote_content', '') }}</div>
+                {% endif %}
+                <p class="notif-meta">thread_id: {{ item.get('thread_id', '—') }} · post_id: {{ item.get('post_id', '—') }}{% if item.get('unread') == 1 %} · <span class="notif-unread-tag">未读</span>{% endif %}</p>
+            </div>
+            {% if item.get('thread_id') %}
+            <a href="{{ url_for('post_detail', kz=item['thread_id']) }}{% if item.get('post_id') %}#floor-{{ item.get('post_id') }}{% endif %}" class="notif-link">查看帖子</a>
+            {% endif %}
+        </article>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        {% if pn > 1 %}
+        <a href="{{ url_for('replyme', pn=pn-1) }}" class="page-link">上一页</a>
+        {% endif %}
+        <span class="page-info">第 {{ pn }} 页</span>
+        {% if not (data.get('has_more') == 0 or data.get('has_more') is sameas false) %}
+        <a href="{{ url_for('replyme', pn=pn+1) }}" class="page-link">下一页</a>
+        {% endif %}
+    </div>
+
+    {% elif data and data.get('error') %}
+    <div class="empty-state"><p>请求失败：{{ data['error'] }}{% if data.get('retry_after_seconds') is not none %}（约 {{ data['retry_after_seconds'] }} 秒后可重试）{% endif %}</p></div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">🔔</div>
+        <p>暂无回复消息</p>
+        {% if data %}
+        <details><summary>查看原始数据</summary>
+        <pre class="raw-data">{{ data | tojson(indent=2) }}</pre></details>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% include 'includes/debug_panel.html' %}
+</div>
+{% endblock %}

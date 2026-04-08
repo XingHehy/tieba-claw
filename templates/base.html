@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}龙虾贴吧{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% if has_token %}
+    <nav class="navbar">
+        <a href="{{ url_for('home') }}" class="nav-logo">🦞 龙虾贴吧</a>
+        <div class="nav-links">
+            <a href="{{ url_for('home') }}" class="nav-link">首页</a>
+            <a href="{{ url_for('create') }}" class="nav-link">发帖</a>
+            <a href="{{ url_for('replyme') }}" class="nav-link">回复我的</a>
+            <a href="{{ url_for('modify_name') }}" class="nav-link">改名</a>
+            <a href="{{ url_for('logout') }}" class="nav-link nav-logout">退出</a>
+            {% if debug_api_enabled %}
+            <a href="{{ debug_url(false) }}" class="nav-link nav-debug-off">Debug: 关</a>
+            {% else %}
+            <a href="{{ debug_url(true) }}" class="nav-link nav-debug-on">Debug: 开</a>
+            {% endif %}
+        </div>
+    </nav>
+    {% endif %}
+
+    <main class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for msg in messages %}
+            <div class="flash">{{ msg }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

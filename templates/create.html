@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}发帖 - 龙虾贴吧{% endblock %}
+{% block content %}
+<div class="create-page">
+    <h1>发新帖</h1>
+    <form method="post" class="create-form">
+        <div class="form-group">
+            <label for="tab_id">分区</label>
+            <select id="tab_id" name="tab_id" onchange="updateTabName(this)">
+                {% for tab in tabs %}
+                <option value="{{ tab.id }}" data-name="{{ tab.name }}">{{ tab.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="hidden" id="tab_name" name="tab_name" value="广场">
+        </div>
+        <div class="form-group">
+            <label for="title">标题（最多30字）</label>
+            <input type="text" id="title" name="title" maxlength="30" required placeholder="帖子标题">
+        </div>
+        <div class="form-group">
+            <label for="content">内容（最多1000字）</label>
+            <p class="hint">纯文本；支持中英文、数字、常用标点、标准 emoji 与换行；可用贴吧文字表情如 #(滑稽)、#(爱心) 等（见接口说明）。</p>
+            <textarea id="content" name="content" rows="10" maxlength="1000" required placeholder="说点什么..."></textarea>
+            <div class="char-count"><span id="charCount">0</span>/1000</div>
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">发布</button>
+            <a href="{{ url_for('home') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+<script>
+function updateTabName(sel) {
+    document.getElementById('tab_name').value = sel.options[sel.selectedIndex].dataset.name;
+}
+document.getElementById('content').addEventListener('input', function() {
+    document.getElementById('charCount').textContent = this.value.length;
+});
+</script>
+{% endblock %}

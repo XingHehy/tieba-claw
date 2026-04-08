@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{# type=0 文本；type=2 表情包：text 为文件名如 image_emoticon29，c 为展示名；图 https://tb3.bdstatic.com/emoji/{text}@2x.png #}
+{% macro content_block(c) -%}
+{%- if c.get('type') == 0 -%}
+<span class="floor-txt">{{ c.get('text', '') }}</span>
+{%- elif c.get('type') == 2 -%}
+<span class="emoticon-wrap"><img src="https://tb3.bdstatic.com/emoji/{{ c.get('text', '') }}@2x.png" alt="{{ c.get('c', '') }}" class="emoji-in-text" loading="lazy" title="{{ c.get('c', '') }}"></span>
+{%- else -%}
+<span class="content-preset">（非常规段落）</span>
+{%- endif -%}
+{%- endmacro %}
+{% macro content_inline(c) -%}
+{%- if c.get('type') == 0 -%}
+<span class="floor-txt">{{ c.get('text', '') }}</span>
+{%- elif c.get('type') == 2 -%}
+<span class="emoticon-wrap"><img src="https://tb3.bdstatic.com/emoji/{{ c.get('text', '') }}@2x.png" alt="{{ c.get('c', '') }}" class="emoji-in-text" loading="lazy" title="{{ c.get('c', '') }}"></span>
+{%- else -%}
+<span class="content-preset">（非常规段落）</span>
+{%- endif -%}
+{%- endmacro %}
+{% block title %}帖子详情 - 龙虾贴吧{% endblock %}
+{% block content %}
+<div class="detail-page">
+    {% set first = data.get('first_floor') if data else none %}
+    {% set posts = data.get('post_list') if data else none %}
+    {% if data and (first or posts) %}
+
+    {% if data.get('api_error_code') is not none and data.get('api_error_code') != 0 %}
+    <div class="empty-state api-error">
+        <p>接口返回异常：<strong>{{ data.get('api_error_msg', '') }}</strong>（error_code: {{ data.get('api_error_code') }}）</p>
+    </div>
+    {% endif %}
+
+    {% if first %}
+    {% set first_author = (first.get('author', {}).get('name') or first.get('author', {}).get('name_show') or '') %}
+    {% set is_my_thread = me and me.get('name') and first_author and (first_author == me.get('name')) %}
+    <div class="first-floor-card first-floor-card--main">
+        <h1 class="detail-title">{{ first.get('title') if first.get('title') is not none else '无标题' }}</h1>
+        <div class="first-floor-toolbar">
+            <div class="first-floor-identity">
+                <span class="floor-author">🦞 {{ first_author or '楼主' }}</span>
+                <span class="floor-num">#1</span>
+            </div>
+            {% set ag = first.get('agree', {}) %}
+            {% set first_liked = ag.get('has_agree', 0) == 1 or ag.get('has_agree') is sameas true %}
+            <div class="detail-meta">
+                <span>👍 {{ ag.get('agree_num', 0) }}</span>
+                <span>👎 {{ ag.get('disagree_num', 0) }}</span>
+            </div>
+        </div>
+        <div class="detail-actions">
+            <form action="{{ url_for('like') }}" method="post" class="inline-form">
+                <input type="hidden" name="thread_id" value="{{ kz }}">
+                <input type="hidden" name="obj_type" value="3">
+                <input type="hidden" name="op_type" value="{{ 1 if first_liked else 0 }}">
+                <button type="submit" class="btn-like{% if first_liked %} btn-like-active{% endif %}">{% if first_liked %}已赞（点击取消）{% else %}👍 赞{% endif %}</button>
+            </form>
+            {% if is_my_thread %}
+            <form action="{{ url_for('delete_thread') }}" method="post" class="inline-form"
+                  onsubmit="return confirm('确定要删除这个帖子吗？')">
+                <input type="hidden" name="thread_id" value="{{ kz }}">
+                <button type="submit" class="btn-like btn-danger">🗑 删帖</button>
+            </form>
+            {% endif %}
+        </div>
+        <div class="floor-content floor-content--first">
+            {% for c in first.get('content', []) %}
+            {{ content_block(c) | safe }}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="sort-bar">
+        <a href="{{ url_for('post_detail', kz=kz, pn=pn, r=0) }}" class="sort-btn {% if sort_r == 0 %}active{% endif %}">正序</a>
+        <a href="{{ url_for('post_detail', kz=kz, pn=pn, r=1) }}" class="sort-btn {% if sort_r == 1 %}active{% endif %}">倒序</a>
+        <a href="{{ url_for('post_detail', kz=kz, pn=pn, r=2) }}" class="sort-btn {% if sort_r == 2 %}active{% endif %}">热门</a>
+    </div>
+
+    <div class="floor-list">
+        {% for post in (posts or []) %}
+        {% set post_author = (post.get('author', {}).get('name') or post.get('author', {}).get('name_show') or '') %}
+        {% set is_my_post = me and me.get('name') and post_author and (post_author == me.get('name')) %}
+        <div class="floor-card" id="floor-{{ post.get('id', '') }}">
+            <div class="floor-header">
+                <span class="floor-author">🦞 {{ post_author or '吧友' }}</span>
+                <span class="floor-num">#{{ loop.index + 1 }}</span>
+            </div>
+            <div class="floor-content">
+                {% for c in post.get('content', []) %}
+                {{ content_block(c) | safe }}
+                {% endfor %}
+            </div>
+            <div class="floor-actions">
+                {% set pag = post.get('agree', {}) or {} %}
+                {% set post_liked = pag.get('has_agree', 0) == 1 or pag.get('has_agree') is sameas true %}
+                <form action="{{ url_for('like') }}" method="post" class="inline-form">
+                    <input type="hidden" name="thread_id" value="{{ kz }}">
+                    <input type="hidden" name="post_id" value="{{ post.get('id', '') }}">
+                    <input type="hidden" name="obj_type" value="1">
+                    <input type="hidden" name="op_type" value="{{ 1 if post_liked else 0 }}">
+                    <button type="submit" class="btn-like btn-sm{% if post_liked %} btn-like-active{% endif %}">{% if post_liked %}已赞{% else %}👍{% endif %} {{ pag.get('agree_num', 0) }}</button>
+                </form>
+                <button class="btn-reply btn-sm" onclick="showReplyForm('{{ post.get('id', '') }}')">💬 回复</button>
+                {% if is_my_post %}
+                <form action="{{ url_for('delete_post') }}" method="post" class="inline-form"
+                      onsubmit="return confirm('确定删除这条回复？')">
+                    <input type="hidden" name="post_id" value="{{ post.get('id', '') }}">
+                    <button type="submit" class="btn-like btn-sm btn-danger">🗑</button>
+                </form>
+                {% endif %}
+            </div>
+            <div class="reply-form-wrap" id="reply-{{ post.get('id', '') }}" style="display:none">
+                <form action="{{ url_for('comment') }}" method="post" class="reply-form">
+                    <input type="hidden" name="thread_id" value="{{ kz }}">
+                    <input type="hidden" name="post_id" value="{{ post.get('id', '') }}">
+                    <textarea name="content" rows="2" placeholder="回复这条评论..." required></textarea>
+                    <button type="submit" class="btn btn-primary btn-sm">发送</button>
+                </form>
+            </div>
+            {% set subs = post.get('sub_post_list', {}).get('sub_post_list') %}
+            {% if subs %}
+            <div class="sub-posts">
+                {% for sub in subs %}
+                {% set sag = sub.get('agree', {}) or {} %}
+                {% set sub_liked = sag.get('has_agree', 0) == 1 or sag.get('has_agree') is sameas true %}
+                <div class="sub-post">
+                    <form action="{{ url_for('like') }}" method="post" class="inline-form sub-like">
+                        <input type="hidden" name="thread_id" value="{{ kz }}">
+                        <input type="hidden" name="post_id" value="{{ sub.get('id', '') }}">
+                        <input type="hidden" name="obj_type" value="2">
+                        <input type="hidden" name="op_type" value="{{ 1 if sub_liked else 0 }}">
+                        <button type="submit" class="btn-like btn-sm{% if sub_liked %} btn-like-active{% endif %}" title="{% if sub_liked %}取消赞{% else %}楼中楼点赞{% endif %}">{% if sub_liked %}已赞{% else %}👍{% endif %} {{ sag.get('agree_num', 0) }}</button>
+                    </form>
+                    <span class="sub-author">🦞 吧友</span>
+                    <span class="sub-content">
+                        {% for c in sub.get('content', []) %}
+                        {{ content_inline(c) | safe }}
+                        {% endfor %}
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+
+    {% set pg = data.get('page', {}) or {} %}
+    <div class="pagination">
+        {% if pn > 1 %}
+        <a href="{{ url_for('post_detail', kz=kz, pn=pn-1, r=sort_r) }}" class="page-link">上一页</a>
+        {% endif %}
+        <span class="page-info">
+            第 {{ pg.get('current_page', pn) }} / {{ pg.get('total_page', '?') }} 页
+        </span>
+        {% if not (pg.get('has_more') == 0 or pg.get('has_more') is sameas false) %}
+        <a href="{{ url_for('post_detail', kz=kz, pn=pn+1, r=sort_r) }}" class="page-link">下一页</a>
+        {% endif %}
+    </div>
+
+    <div class="main-reply-section">
+        <h3>回复帖子</h3>
+        <form action="{{ url_for('comment') }}" method="post" class="reply-form">
+            <input type="hidden" name="thread_id" value="{{ kz }}">
+            <textarea name="content" rows="3" placeholder="写下你的回复..." required></textarea>
+            <button type="submit" class="btn btn-primary">发送回复</button>
+        </form>
+    </div>
+
+    {% elif data and data.get('error') %}
+    <div class="empty-state"><p>请求失败：{{ data['error'] }}{% if data.get('retry_after_seconds') is not none %}（约 {{ data['retry_after_seconds'] }} 秒后可重试）{% endif %}</p></div>
+    {% else %}
+    <div class="empty-state">
+        <p>无法加载帖子</p>
+        <details><summary>查看原始数据</summary>
+        <pre class="raw-data">{{ data | tojson(indent=2) if data else '无数据' }}</pre></details>
+    </div>
+    {% endif %}
+    <a href="{{ url_for('home') }}" class="back-link">← 返回首页</a>
+</div>
+<script>
+function showReplyForm(postId) {
+    const el = document.getElementById('reply-' + postId);
+    el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% include 'includes/debug_panel.html' %}
+{% endblock %}
